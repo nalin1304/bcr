@@ -20,8 +20,107 @@ st.set_page_config(
 )
 
 def load_css():
-    with open("assets/styles.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    try:
+        with open("assets/styles.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.markdown("""
+        <style>
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        .image-info {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .info-card {
+            background: linear-gradient(135deg, #fefefe, #f8f9fa);
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .stExpander {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .prediction-section {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+def get_biomarker_details_fallback(marker):
+    biomarker_info = {
+        'Ki-67': 'Proliferation marker - indicates cell division activity',
+        'EGFR': 'Epidermal Growth Factor Receptor - cell growth signaling',
+        'ESR1': 'Estrogen Receptor 1 - hormone receptor',
+        'PGR': 'Progesterone Receptor - hormone receptor',
+        'BRCA1': 'Tumor suppressor gene - DNA repair',
+        'TP53': 'Tumor suppressor protein - cell cycle control',
+        'ERBB2': 'Human Epidermal Growth Factor Receptor 2 (HER2)',
+        'RB1': 'Retinoblastoma protein - cell cycle regulation',
+        'SNAI1': 'Snail Family Transcriptional Repressor 1',
+        'SNAI': 'Snail transcription factor',
+        'PTEN': 'Phosphatase and Tensin Homolog - tumor suppressor',
+        'CDH1': 'E-cadherin - cell adhesion molecule',
+        'MKI67': 'Marker of proliferation - cell division indicator'
+    }
+    return biomarker_info.get(marker, 'Biomarker for cancer classification')
+
+def create_biomarker_radar_fallback(biomarker_data):
+    try:
+        import plotly.graph_objects as go
+        
+        markers = list(biomarker_data.keys())
+        intensity_values = []
+        
+        intensity_mapping = {
+            'Negative': 0, 'Negative ': 0, 'Not detected': 0,
+            'Weak': 1, 'Moderate': 2, 'Moderate ': 2,
+            'Strong': 3, 'Strong ': 3, '315': 3
+        }
+        
+        for marker in markers:
+            intensity = biomarker_data[marker]['intensity']
+            intensity_values.append(intensity_mapping.get(intensity, 1))
+        
+        fig = go.Figure(data=go.Scatterpolar(
+            r=intensity_values,
+            theta=markers,
+            fill='toself',
+            name='Biomarker Intensity'
+        ))
+        
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 3]
+                )
+            ),
+            showlegend=True,
+            title="Biomarker Expression Profile"
+        )
+        
+        return fig
+    except Exception as e:
+        st.error(f"Error creating radar chart: {str(e)}")
+        return None
 
 def create_upload_section():
     st.markdown("### 📤 Upload Histopathological Image")
@@ -34,7 +133,15 @@ def create_upload_section():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown(create_upload_animation(), unsafe_allow_html=True)
+        try:
+            st.markdown(create_upload_animation(), unsafe_allow_html=True)
+        except:
+            st.markdown("""
+            <div style="text-align: center; padding: 2rem; border: 2px dashed #ccc; border-radius: 10px;">
+            <h4>📤 Upload Area</h4>
+            <p>Drag and drop your image here or click to browse</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         uploaded_file = st.file_uploader(
             "Choose a histopathological image...",
@@ -43,26 +150,30 @@ def create_upload_section():
         )
         
         if uploaded_file is not None:
-            image = Image.open(uploaded_file)
-            
-            st.success("✅ Image uploaded successfully!")
-            
-            col_img1, col_img2 = st.columns(2)
-            with col_img1:
-                st.image(image, caption="Original Image", use_column_width=True)
-            
-            with col_img2:
-                st.markdown(f"""
-                <div class="image-info">
-                <h4>📋 Image Information</h4>
-                <p><strong>Filename:</strong> {uploaded_file.name}</p>
-                <p><strong>Size:</strong> {image.size[0]} x {image.size[1]} pixels</p>
-                <p><strong>Format:</strong> {image.format}</p>
-                <p><strong>Mode:</strong> {image.mode}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            return uploaded_file, image
+            try:
+                image = Image.open(uploaded_file)
+                
+                st.success("✅ Image uploaded successfully!")
+                
+                col_img1, col_img2 = st.columns(2)
+                with col_img1:
+                    st.image(image, caption="Original Image", use_column_width=True)
+                
+                with col_img2:
+                    st.markdown(f"""
+                    <div class="image-info">
+                    <h4>📋 Image Information</h4>
+                    <p><strong>Filename:</strong> {uploaded_file.name}</p>
+                    <p><strong>Size:</strong> {image.size[0]} x {image.size[1]} pixels</p>
+                    <p><strong>Format:</strong> {image.format}</p>
+                    <p><strong>Mode:</strong> {image.mode}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                return uploaded_file, image
+            except Exception as e:
+                st.error(f"Error processing image: {str(e)}")
+                return None, None
     
     with col2:
         st.markdown("""
@@ -83,11 +194,17 @@ def create_biomarker_section():
     st.markdown("### 🧬 Biomarker Data Input")
     st.markdown("""
     <div style="margin-bottom: 1.5rem;">
-    <p style="color: #4a5568;">Select biomarker intensities and staining patterns for comprehensive analysis</p>
+    <p style="color: #4a5568;">Select biomarker intensities, staining patterns, and location data for comprehensive analysis</p>
     </div>
     """, unsafe_allow_html=True)
     
-    biomarkers = get_all_biomarkers()
+    biomarker_options = ['Ki-67', 'EGFR', 'ESR1', 'PGR', 'BRCA1', 'TP53', 'ERBB2', 'RB1', 'SNAI1', 'SNAI', 'PTEN', 'CDH1', 'MKI67']
+    
+    intensity_options = ['Moderate', 'Strong', 'Negative', 'Weak', 'Negative ', 'Strong ', 'Moderate ', 'Not detected', '315']
+    
+    staining_options = ['Medium', 'High', 'Not detected', 'Low', 'Medium ', 'NOS (M-00100)', 'NOS (M-80003)', 'Lobular carcinoma (M-85203)']
+    
+    location_options = ['Nuclear', 'Cytoplasmic', 'cytoplasmic', '-', 'Membranous nuclear', 'Cytoplasmic/membranous', 'Cytoplasmic/membranous, Nuclear', 'Nuclear ', 'Cytoplasmic/membranous, nuclear ', 'Cytoplasmic/membranous ', 'Cytoplasmic membranous, nuclear ', 'Cytoplasmic membranous,nuclear ', 'Cytoplasmic/membranous,nuclear', 'Cytoplasmic/', 'Negative', 'Cytoplasmic/ membranous nuclear', 'Weak', 'Cytoplasmic/ membranous']
     
     col1, col2 = st.columns(2)
     
@@ -96,74 +213,111 @@ def create_biomarker_section():
     with col1:
         st.markdown("#### Primary Biomarkers")
         
-        primary_markers = ['Ki-67', 'HER2', 'EGFR', 'TP53', 'CDH1']
+        primary_markers = ['Ki-67', 'ERBB2', 'EGFR', 'TP53', 'CDH1', 'ESR1', 'PGR']
         
         for marker in primary_markers:
             with st.expander(f"🔬 {marker}", expanded=True):
-                details = get_biomarker_details(marker)
+                try:
+                    details = get_biomarker_details(marker)
+                except:
+                    details = get_biomarker_details_fallback(marker)
                 
-                col_marker1, col_marker2 = st.columns(2)
+                col_marker1, col_marker2, col_marker3 = st.columns(3)
                 
                 with col_marker1:
                     intensity = st.selectbox(
                         "Intensity",
-                        ['Weak', 'Moderate', 'Strong'],
+                        intensity_options,
+                        index=0,
                         key=f"{marker}_intensity",
                         help=f"Expression intensity for {marker}"
                     )
                 
                 with col_marker2:
                     staining = st.selectbox(
-                        "Staining Type",
-                        ['Nuclear', 'Cytoplasmic', 'Membranous'],
+                        "Staining",
+                        staining_options,
+                        index=0,
                         key=f"{marker}_staining",
                         help=f"Staining pattern for {marker}"
+                    )
+                
+                with col_marker3:
+                    location = st.selectbox(
+                        "Location",
+                        location_options,
+                        index=0,
+                        key=f"{marker}_location",
+                        help=f"Cellular location for {marker}"
                     )
                 
                 st.markdown(f"<small>{details}</small>", unsafe_allow_html=True)
                 
                 biomarker_data[marker] = {
                     'intensity': intensity,
-                    'staining': staining
+                    'staining': staining,
+                    'location': location
                 }
     
     with col2:
         st.markdown("#### Secondary Biomarkers")
         
-        secondary_markers = ['PTEN', 'BRCA1', 'RB1', 'ESR1']
+        secondary_markers = ['PTEN', 'BRCA1', 'RB1', 'SNAI1', 'SNAI', 'MKI67']
         
         for marker in secondary_markers:
             with st.expander(f"🔬 {marker}", expanded=True):
-                details = get_biomarker_details(marker)
+                try:
+                    details = get_biomarker_details(marker)
+                except:
+                    details = get_biomarker_details_fallback(marker)
                 
-                col_marker1, col_marker2 = st.columns(2)
+                col_marker1, col_marker2, col_marker3 = st.columns(3)
                 
                 with col_marker1:
                     intensity = st.selectbox(
                         "Intensity",
-                        ['Weak', 'Moderate', 'Strong'],
+                        intensity_options,
+                        index=0,
                         key=f"{marker}_intensity",
                         help=f"Expression intensity for {marker}"
                     )
                 
                 with col_marker2:
                     staining = st.selectbox(
-                        "Staining Type",
-                        ['Nuclear', 'Cytoplasmic', 'Membranous'],
+                        "Staining",
+                        staining_options,
+                        index=0,
                         key=f"{marker}_staining",
                         help=f"Staining pattern for {marker}"
+                    )
+                
+                with col_marker3:
+                    location = st.selectbox(
+                        "Location",
+                        location_options,
+                        index=0,
+                        key=f"{marker}_location",
+                        help=f"Cellular location for {marker}"
                     )
                 
                 st.markdown(f"<small>{details}</small>", unsafe_allow_html=True)
                 
                 biomarker_data[marker] = {
                     'intensity': intensity,
-                    'staining': staining
+                    'staining': staining,
+                    'location': location
                 }
     
     st.markdown("#### 📊 Biomarker Summary")
-    radar_chart = create_biomarker_radar(biomarker_data)
-    st.plotly_chart(radar_chart, use_container_width=True)
+    try:
+        radar_chart = create_biomarker_radar(biomarker_data)
+        st.plotly_chart(radar_chart, use_container_width=True)
+    except:
+        radar_chart = create_biomarker_radar_fallback(biomarker_data)
+        if radar_chart:
+            st.plotly_chart(radar_chart, use_container_width=True)
+        else:
+            st.info("Radar chart visualization unavailable")
     
     return biomarker_data
 
@@ -183,7 +337,15 @@ def create_prediction_section(uploaded_file, image, biomarker_data):
                 st.error("❌ Please upload an image first!")
                 return False
             
-            st.markdown(create_loading_animation(), unsafe_allow_html=True)
+            try:
+                st.markdown(create_loading_animation(), unsafe_allow_html=True)
+            except:
+                st.markdown("""
+                <div style="text-align: center; padding: 2rem;">
+                <h4>🔄 Processing...</h4>
+                <p>Please wait while we analyze your sample</p>
+                </div>
+                """, unsafe_allow_html=True)
             
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -215,7 +377,11 @@ def create_prediction_section(uploaded_file, image, biomarker_data):
             
             st.success("✅ Analysis complete! Redirecting to results...")
             time.sleep(2)
-            st.switch_page("pages/2_Results.py")
+            
+            try:
+                st.switch_page("pages/2_Results.py")
+            except:
+                st.info("Results are ready! Please navigate to the Results page manually.")
             
             return True
     
@@ -226,7 +392,6 @@ def main():
     
     st.markdown("""
     <style>
-    /* Upload page specific improvements */
     .main .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
@@ -265,7 +430,6 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    
     nav_col1, nav_col2, nav_col3, nav_col4, nav_col5, nav_col6 = st.columns([1.5, 1, 1, 1, 1, 1])
     
     with nav_col1:
@@ -273,7 +437,10 @@ def main():
     
     with nav_col2:
         if st.button("🏠 Home", use_container_width=True):
-            st.switch_page("app.py")
+            try:
+                st.switch_page("app.py")
+            except:
+                st.info("Navigate to Home page manually")
     
     with nav_col3:
         if st.button("📤 Upload", use_container_width=True, type="primary"):
@@ -281,36 +448,60 @@ def main():
     
     with nav_col4:
         if st.button("📊 Results", use_container_width=True):
-            st.switch_page("pages/2_Results.py")
+            try:
+                st.switch_page("pages/2_Results.py")
+            except:
+                st.info("Navigate to Results page manually")
     
     with nav_col5:
         if st.button("🧠 Model", use_container_width=True):
-            st.switch_page("pages/3_Model_Info.py")
+            try:
+                st.switch_page("pages/3_Model_Info.py")
+            except:
+                st.info("Navigate to Model Info page manually")
     
     with nav_col6:
         if st.button("ℹ️ About", use_container_width=True):
-            st.switch_page("pages/4_About.py")
+            try:
+                st.switch_page("pages/4_About.py")
+            except:
+                st.info("Navigate to About page manually")
     
     st.markdown("---")
     
-    st.markdown(create_particles(), unsafe_allow_html=True)
-    st.markdown(create_morphing_shapes(), unsafe_allow_html=True)
+    try:
+        st.markdown(create_particles(), unsafe_allow_html=True)
+        st.markdown(create_morphing_shapes(), unsafe_allow_html=True)
+    except:
+        pass
     
     st.sidebar.title("📤 Upload & Predict")
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🔗 Quick Navigation")
     
     if st.sidebar.button("🏠 Home", use_container_width=True):
-        st.switch_page("app.py")
+        try:
+            st.switch_page("app.py")
+        except:
+            st.info("Navigate to Home page manually")
     
     if st.sidebar.button("📊 View Results", use_container_width=True):
-        st.switch_page("pages/2_Results.py")
-        
+        try:
+            st.switch_page("pages/2_Results.py")
+        except:
+            st.info("Navigate to Results page manually")
+    
     if st.sidebar.button("🧠 Model Information", use_container_width=True):
-        st.switch_page("pages/3_Model_Info.py")
-        
+        try:
+            st.switch_page("pages/3_Model_Info.py")
+        except:
+            st.info("Navigate to Model Info page manually")
+    
     if st.sidebar.button("ℹ️ About Project", use_container_width=True):
-        st.switch_page("pages/4_About.py")
+        try:
+            st.switch_page("pages/4_About.py")
+        except:
+            st.info("Navigate to About page manually")
     
     st.sidebar.markdown("---")
     st.sidebar.markdown("### ⚙️ Upload Settings")
@@ -333,7 +524,10 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown(create_holographic_display(), unsafe_allow_html=True)
+    try:
+        st.markdown(create_holographic_display(), unsafe_allow_html=True)
+    except:
+        pass
     
     uploaded_file, image = create_upload_section()
     
@@ -348,7 +542,10 @@ def main():
     if 'prediction_results' in st.session_state:
         st.info("🎉 Previous analysis results are available in the Results page!")
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    try:
+        st.markdown('</div>', unsafe_allow_html=True)
+    except:
+        pass
 
 if __name__ == "__main__":
     main()
