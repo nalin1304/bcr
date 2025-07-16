@@ -90,9 +90,10 @@ def create_biomarker_radar_fallback(biomarker_data):
         intensity_values = []
         
         intensity_mapping = {
-            'Negative': 0, 'Negative ': 0, 'Not detected': 0,
-            'Weak': 1, 'Moderate': 2, 'Moderate ': 2,
-            'Strong': 3, 'Strong ': 3, '315': 3
+            'Negative': 0,
+            'Weak': 1,
+            'Moderate': 2,
+            'Strong': 3
         }
         
         for marker in markers:
@@ -198,13 +199,14 @@ def create_biomarker_section():
     </div>
     """, unsafe_allow_html=True)
     
+    # Clean, deduplicated options
     biomarker_options = ['Ki-67', 'EGFR', 'ESR1', 'PGR', 'BRCA1', 'TP53', 'ERBB2', 'RB1', 'SNAI1', 'SNAI', 'PTEN', 'CDH1', 'MKI67']
     
-    intensity_options = ['Moderate', 'Strong', 'Negative', 'Weak', 'Negative ', 'Strong ', 'Moderate ', 'Not detected', '315']
+    intensity_options = ['Moderate', 'Strong', 'Negative', 'Weak']
     
-    staining_options = ['Medium', 'High', 'Not detected', 'Low', 'Medium ', 'NOS (M-00100)', 'NOS (M-80003)', 'Lobular carcinoma (M-85203)']
+    staining_options = ['Medium', 'High', 'Not detected', 'Low']
     
-    location_options = ['Nuclear', 'Cytoplasmic', 'cytoplasmic', '-', 'Membranous nuclear', 'Cytoplasmic/membranous', 'Cytoplasmic/membranous, Nuclear', 'Nuclear ', 'Cytoplasmic/membranous, nuclear ', 'Cytoplasmic/membranous ', 'Cytoplasmic membranous, nuclear ', 'Cytoplasmic membranous,nuclear ', 'Cytoplasmic/membranous,nuclear', 'Cytoplasmic/', 'Negative', 'Cytoplasmic/ membranous nuclear', 'Weak', 'Cytoplasmic/ membranous']
+    location_options = ['Nuclear', 'Cytoplasmic', 'cytoplasmic', '-', 'Membranous nuclear']
     
     col1, col2 = st.columns(2)
     
