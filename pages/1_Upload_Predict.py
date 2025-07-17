@@ -90,10 +90,9 @@ def create_biomarker_radar_fallback(biomarker_data):
         intensity_values = []
         
         intensity_mapping = {
-            'Negative': 0,
-            'Weak': 1,
-            'Moderate': 2,
-            'Strong': 3
+            'Negative': 0, 'Negative ': 0, 'Not detected': 0,
+            'Weak': 1, 'Moderate': 2, 'Moderate ': 2,
+            'Strong': 3, 'Strong ': 3, '315': 3
         }
         
         for marker in markers:
@@ -192,184 +191,98 @@ def create_upload_section():
     return None, None
 
 def create_biomarker_section():
-    st.markdown("### 🧬 Breast Cancer Subtype Analysis")
+    st.markdown("### 🧬 Biomarker Data Input")
     st.markdown("""
     <div style="margin-bottom: 1.5rem;">
-    <p style="color: #4a5568;">Select the breast cancer subtype and configure biomarker parameters for each subtype</p>
+    <p style="color: #4a5568;">Select ONE biomarker and provide its intensity, staining pattern, and location data for analysis</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Clean, deduplicated options
     biomarker_options = ['Ki-67', 'EGFR', 'ESR1', 'PGR', 'BRCA1', 'TP53', 'ERBB2', 'RB1', 'SNAI1', 'SNAI', 'PTEN', 'CDH1', 'MKI67']
     
-    intensity_options = ['Moderate', 'Strong', 'Negative', 'Weak']
+    intensity_options = ['Moderate', 'Strong', 'Negative', 'Weak', 'Negative ', 'Strong ', 'Moderate ', 'Not detected', '315']
     
-    staining_options = ['Medium', 'High', 'Not detected', 'Low']
+    staining_options = ['Medium', 'High', 'Not detected', 'Low', 'Medium ', 'NOS (M-00100)', 'NOS (M-80003)', 'Lobular carcinoma (M-85203)']
     
-    location_options = ['Nuclear', 'Cytoplasmic', 'cytoplasmic', '-', 'Membranous nuclear']
+    location_options = ['Nuclear', 'Cytoplasmic', 'cytoplasmic', '-', 'Membranous nuclear', 'Cytoplasmic/membranous', 'Cytoplasmic/membranous, Nuclear', 'Nuclear ', 'Cytoplasmic/membranous, nuclear ', 'Cytoplasmic/membranous ', 'Cytoplasmic membranous, nuclear ', 'Cytoplasmic membranous,nuclear ', 'Cytoplasmic/membranous,nuclear', 'Cytoplasmic/', 'Negative', 'Cytoplasmic/ membranous nuclear', 'Weak', 'Cytoplasmic/ membranous']
     
-    # Define subtypes and their associated biomarkers
-    subtypes = {
-        'IDC': {
-            'name': 'Invasive Ductal Carcinoma',
-            'description': 'Most common type of breast cancer',
-            'biomarkers': ['Ki-67', 'EGFR', 'ESR1', 'PGR', 'ERBB2']
-        },
-        'ILC': {
-            'name': 'Invasive Lobular Carcinoma',
-            'description': 'Second most common type of breast cancer',
-            'biomarkers': ['CDH1', 'ESR1', 'PGR', 'Ki-67', 'ERBB2']
-        },
-        'MBC': {
-            'name': 'Metaplastic Breast Carcinoma',
-            'description': 'Rare and aggressive form of breast cancer',
-            'biomarkers': ['EGFR', 'TP53', 'BRCA1', 'Ki-67', 'PTEN']
-        },
-        'TNBC': {
-            'name': 'Triple-Negative Breast Cancer',
-            'description': 'Aggressive subtype lacking hormone receptors',
-            'biomarkers': ['TP53', 'BRCA1', 'EGFR', 'Ki-67', 'RB1']
-        }
-    }
-    
-    col1, col2 = st.columns(2)
+    # Single column layout for biomarker selection
+    col1 = st.columns(1)[0]
     
     biomarker_data = {}
     
     with col1:
-        # IDC and ILC subtypes
-        for subtype in ['IDC', 'ILC']:
-            subtype_info = subtypes[subtype]
-            
-            with st.expander(f"🎯 {subtype} - {subtype_info['name']}", expanded=True):
-                st.markdown(f"<small><i>{subtype_info['description']}</i></small>", unsafe_allow_html=True)
-                st.markdown("##### Associated Biomarkers:")
-                
-                for marker in subtype_info['biomarkers']:
-                    st.markdown(f"**{marker}**")
-                    
-                    col_marker1, col_marker2, col_marker3 = st.columns(3)
-                    
-                    with col_marker1:
-                        intensity = st.selectbox(
-                            "Intensity",
-                            intensity_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_intensity",
-                            help=f"Expression intensity for {marker} in {subtype}"
-                        )
-                    
-                    with col_marker2:
-                        staining = st.selectbox(
-                            "Staining",
-                            staining_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_staining",
-                            help=f"Staining pattern for {marker} in {subtype}"
-                        )
-                    
-                    with col_marker3:
-                        location = st.selectbox(
-                            "Location",
-                            location_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_location",
-                            help=f"Cellular location for {marker} in {subtype}"
-                        )
-                    
-                    try:
-                        details = get_biomarker_details(marker)
-                    except:
-                        details = get_biomarker_details_fallback(marker)
-                    
-                    st.markdown(f"<small>{details}</small>", unsafe_allow_html=True)
-                    
-                    biomarker_data[f"{subtype}_{marker}"] = {
-                        'subtype': subtype,
-                        'biomarker': marker,
-                        'intensity': intensity,
-                        'staining': staining,
-                        'location': location
-                    }
-                    
-                    st.markdown("---")
-    
-    with col2:
-        # MBC and TNBC subtypes
-        for subtype in ['MBC', 'TNBC']:
-            subtype_info = subtypes[subtype]
-            
-            with st.expander(f"🎯 {subtype} - {subtype_info['name']}", expanded=True):
-                st.markdown(f"<small><i>{subtype_info['description']}</i></small>", unsafe_allow_html=True)
-                st.markdown("##### Associated Biomarkers:")
-                
-                for marker in subtype_info['biomarkers']:
-                    st.markdown(f"**{marker}**")
-                    
-                    col_marker1, col_marker2, col_marker3 = st.columns(3)
-                    
-                    with col_marker1:
-                        intensity = st.selectbox(
-                            "Intensity",
-                            intensity_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_intensity",
-                            help=f"Expression intensity for {marker} in {subtype}"
-                        )
-                    
-                    with col_marker2:
-                        staining = st.selectbox(
-                            "Staining",
-                            staining_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_staining",
-                            help=f"Staining pattern for {marker} in {subtype}"
-                        )
-                    
-                    with col_marker3:
-                        location = st.selectbox(
-                            "Location",
-                            location_options,
-                            index=0,
-                            key=f"{subtype}_{marker}_location",
-                            help=f"Cellular location for {marker} in {subtype}"
-                        )
-                    
-                    try:
-                        details = get_biomarker_details(marker)
-                    except:
-                        details = get_biomarker_details_fallback(marker)
-                    
-                    st.markdown(f"<small>{details}</small>", unsafe_allow_html=True)
-                    
-                    biomarker_data[f"{subtype}_{marker}"] = {
-                        'subtype': subtype,
-                        'biomarker': marker,
-                        'intensity': intensity,
-                        'staining': staining,
-                        'location': location
-                    }
-                    
-                    st.markdown("---")
-    
-    st.markdown("#### 📊 Subtype Analysis Summary")
-    try:
-        # Create a summary of all subtypes
-        summary_data = {}
-        for key, data in biomarker_data.items():
-            subtype = data['subtype']
-            marker = data['biomarker']
-            if subtype not in summary_data:
-                summary_data[subtype] = {}
-            summary_data[subtype][marker] = data
+        st.markdown("#### Select Biomarker")
         
-        radar_chart = create_biomarker_radar_fallback(summary_data.get('IDC', {}))
-        if radar_chart:
-            st.plotly_chart(radar_chart, use_container_width=True)
-        else:
-            st.info("Subtype analysis visualization unavailable")
-    except:
-        st.info("Subtype analysis visualization unavailable")
+        # Biomarker selection dropdown
+        selected_biomarker = st.selectbox(
+            "Choose a biomarker for analysis",
+            biomarker_options,
+            index=0,
+            help="Select the biomarker you want to analyze for this image"
+        )
+        
+        # Single biomarker configuration
+        with st.expander(f"🔬 {selected_biomarker} Configuration", expanded=True):
+            try:
+                details = get_biomarker_details(selected_biomarker)
+            except:
+                details = get_biomarker_details_fallback(selected_biomarker)
+            
+            # Display biomarker description
+            st.markdown(f"<div style='background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'><strong>Description:</strong> {details}</div>", unsafe_allow_html=True)
+            
+            col_marker1, col_marker2, col_marker3 = st.columns(3)
+            
+            with col_marker1:
+                intensity = st.selectbox(
+                    "Intensity",
+                    intensity_options,
+                    index=0,
+                    key=f"{selected_biomarker}_intensity",
+                    help=f"Expression intensity for {selected_biomarker}"
+                )
+            
+            with col_marker2:
+                staining = st.selectbox(
+                    "Staining",
+                    staining_options,
+                    index=0,
+                    key=f"{selected_biomarker}_staining",
+                    help=f"Staining pattern for {selected_biomarker}"
+                )
+            
+            with col_marker3:
+                location = st.selectbox(
+                    "Location",
+                    location_options,
+                    index=0,
+                    key=f"{selected_biomarker}_location",
+                    help=f"Cellular location for {selected_biomarker}"
+                )
+            
+            biomarker_data[selected_biomarker] = {
+                'intensity': intensity,
+                'staining': staining,
+                'location': location
+            }
+    
+    # Display biomarker summary
+    st.markdown("#### 📊 Biomarker Summary")
+    
+    # Create a summary card for the selected biomarker
+    if biomarker_data:
+        marker_info = biomarker_data[selected_biomarker]
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #e3f2fd, #f3e5f5); border: 1px solid #bbdefb; border-radius: 12px; padding: 1.5rem; margin-top: 1rem;">
+        <h4>🔬 {selected_biomarker} Analysis Summary</h4>
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+        <div><strong>Intensity:</strong> {marker_info['intensity']}</div>
+        <div><strong>Staining:</strong> {marker_info['staining']}</div>
+        <div><strong>Location:</strong> {marker_info['location']}</div>
+        </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     return biomarker_data
 
@@ -387,6 +300,10 @@ def create_prediction_section(uploaded_file, image, biomarker_data):
         if st.button("🚀 Analyze Sample", type="primary", use_container_width=True):
             if uploaded_file is None:
                 st.error("❌ Please upload an image first!")
+                return False
+            
+            if not biomarker_data:
+                st.error("❌ Please select and configure a biomarker first!")
                 return False
             
             try:
